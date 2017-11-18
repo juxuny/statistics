@@ -55,7 +55,7 @@ func (t *CollectorImpl) FetchStockCode()(r []StockCode, e error) {
 		return
 	}
 	for k, v := range m {
-		r = append(r, StockCode{Type: t.Type, Code: toUtf8(k), Name: toUtf8(v)})
+		r = append(r, StockCode{Type: t.Type, Code: k, Name: v})
 	}
 	return
 }
