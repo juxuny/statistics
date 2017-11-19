@@ -154,13 +154,13 @@ func (t *CollectorImpl) init(stockCode string) (e error) {
 func (t *CollectorImpl) FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error) {
 	r = make(map[string]StockPrice)
 	for _, code := range stockCode {
-		log.Print("fetch: ", code)
+		//log.Print("fetch: ", code)
 		resp, e := http.Get("http://hq.sinajs.cn/list=" + code)
 		if e != nil {
 			log.Print(e)
 			continue
 		}
-		log.Print("fetch success, ", code)
+		//log.Print("fetch success, ", code)
 		if resp.StatusCode != 200 {
 			log.Printf("fetch data failed, stock code: %s", code)
 			continue

@@ -54,13 +54,12 @@ func collectCode() {
 	if e != nil {
 		log.Print(e)
 	}
-	log.Print(r)
 	e = collector.SaveStockCode(r)
 	if e != nil {
 		log.Print(e)
 		return
 	}
-	log.Println("save success")
+	log.Println("save stock code success")
 }
 
 func collectPrice() {
