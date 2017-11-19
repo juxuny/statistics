@@ -114,6 +114,7 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 		log.Print(e)
 		return
 	}
+	defer db.Close()
 	tx, e := db.Begin()
 	if e != nil {
 		log.Print(e)
@@ -145,6 +146,7 @@ func (t *CollectorImpl) init(stockCode string) (e error) {
 		log.Print(e)
 		return
 	}
+	defer db.Close()
 	_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + stockCode))
 	return
 }
@@ -188,6 +190,7 @@ func (t *CollectorImpl) SaveStockPrice(price ...StockPrice) (e error) {
 	if e != nil {
 		return
 	}
+	defer db.Close()
 	for _, p := range price {
 		log.Print("test table")
 		t.init(p.StockCode)
