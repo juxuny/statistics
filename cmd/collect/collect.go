@@ -5,12 +5,15 @@ import (
 	stat "github.com/juxuny/statistics"
 	"flag"
 	"time"
-	"log"
 )
 
 var dbConfig stat.DBConfig
 
-var debug bool
+var (
+	debug bool
+	logFileName string
+	log = stat.GetLogger()
+)
 
 func init() {
 
@@ -19,16 +22,20 @@ func init() {
 	flag.StringVar(&dbConfig.User, "u", "root", "user for database")
 	flag.StringVar(&dbConfig.Password, "p", "123456", "password")
 	flag.IntVar(&dbConfig.Port, "port", 3306, "port for database")
-	flag.BoolVar(&debug, "d", true, "debug mode")
+	flag.BoolVar(&debug, "d", false, "debug mode")
+	flag.StringVar(&logFileName, "log", "1.log", "log file path")
 	flag.Parse()
 	stat.SetDebug(debug)
+	stat.SetLogFile(logFileName)
+	log = stat.GetLogger()
 }
 
 func main() {
+	collectCode()
 	go func () {
 		for {
+			time.Sleep(12 * time.Hour)
 			go collectCode()
-			time.Sleep(10 * time.Minute)
 		}
 	}()
 	for {
@@ -41,16 +48,17 @@ func main() {
 func collectCode() {
 	collector, e := stat.NewCollector(stat.STOCK_TYPE, dbConfig)
 	if e != nil {
-		panic(e)
+		log.Print(e)
 	}
 	r, e := collector.FetchStockCode()
 	if e != nil {
-		panic(e)
+		log.Print(e)
 	}
 	log.Print(r)
 	e = collector.SaveStockCode(r)
 	if e != nil {
-		panic(e)
+		log.Print(e)
+		return
 	}
 	log.Println("save success")
 }

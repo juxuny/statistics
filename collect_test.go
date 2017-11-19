@@ -38,3 +38,12 @@ func TestLoadCode(t *testing.T) {
 	}
 	t.Log(r)
 }
+
+func TestLogger(t *testing.T) {
+	SetLogFile("1.log")
+	l := GetLogger()
+	if l == nil {
+		t.Log("l is nil")
+		t.Fail()
+	}
+}
