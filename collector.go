@@ -192,14 +192,14 @@ func (t *CollectorImpl) SaveStockPrice(price ...StockPrice) (e error) {
 	}
 	defer db.Close()
 	for _, p := range price {
-		log.Print("test table")
+		//log.Print("test table")
 		t.init(p.StockCode)
-		log.Print("init table finished")
+		//log.Print("init table finished")
 		table := t.Prefix + p.StockCode
 		sql := `INSERT INTO %s (date, time, current_price, open_price, yesterday_close, max, min, buy_1, buy_2, buy_3, buy_4, buy_5, buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5, sell_1, sell_2, sell_3, sell_4, sell_5, sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5, deal, deal_price)
 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT date FROM %s WHERE date = ? AND time = ?)
 `
-		log.Print("save stock price")
+		//log.Print("save stock price")
 		_, e = db.Exec(fmt.Sprintf(sql, table, table), p.Date, p.Time, p.CurrentPrice, p.OpenPrice, p.YesterdayPrice, p.Max, p.Min, p.Buy[0], p.Buy[1], p.Buy[2], p.Buy[3], p.Buy[4], p.BuyPrice[0], p.BuyPrice[1], p.BuyPrice[2], p.BuyPrice[3], p.BuyPrice[4], p.Sell[0], p.Sell[1], p.Sell[2], p.Sell[3], p.Sell[4], p.SellPrice[0], p.SellPrice[1], p.SellPrice[2], p.SellPrice[3], p.SellPrice[4], p.Deal, p.DealPrice,
 			p.Date, p.Time)
 			if e != nil {
