@@ -92,6 +92,7 @@ func (t *CollectorImpl) FetchStockCode()(r []StockCode, e error) {
 	if resp.StatusCode != 200 {
 		return r, fmt.Errorf("HTTP ERROR: %d", resp.StatusCode)
 	}
+	defer resp.Body.Close()
 	log.Print(resp.Header)
 	data, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
