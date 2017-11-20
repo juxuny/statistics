@@ -161,6 +161,7 @@ func (t *CollectorImpl) FetchStockPrice(stockCode ...string) (r map[string]Stock
 			log.Print(e)
 			continue
 		}
+		defer resp.Body.Close()
 		//log.Print("fetch success, ", code)
 		if resp.StatusCode != 200 {
 			log.Printf("fetch data failed, stock code: %s", code)
