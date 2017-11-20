@@ -54,7 +54,7 @@ func main() {
 func collectCode() {
 	collector, e := stat.NewCollector(stat.STOCK_TYPE, dbConfig)
 	if e != nil {
-		log.Print(e)
+		log.Panic(e)
 	}
 	r, e := collector.FetchStockCode()
 	if e != nil {
@@ -105,6 +105,8 @@ func handle(codeList []string) {
 			log.Print(e)
 			continue
 		}
-		log.Print("saved: ", stockPrice.StockCode)
+		if verbose {
+			log.Print("saved: ", stockPrice.StockCode)
+		}
 	}
 }
