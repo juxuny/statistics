@@ -16,7 +16,7 @@ func TestCollectStockData (t *testing.T) {
 		t.Log(e)
 		t.Fail()
 	}
-	r, e := c.FetchStockPrice("sh601006")
+	r, e := c.FetchStockPrices("sh601006", "sh600439")
 	if e != nil {
 		t.Log(e)
 		t.Fail()

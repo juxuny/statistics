@@ -118,7 +118,9 @@ func ParseStockPrice(stockCode string, resp string) (r StockPrice, e error) {
 type Collector interface {
 	FetchStockCode() (r []StockCode, e error)
 	SaveStockCode(r []StockCode) (e error)
+	//一个接一个地获取
 	FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error)
+	FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error)
 	SaveStockPrice(price ...StockPrice) (e error)
 	init(stockCode string) (e error)
 }

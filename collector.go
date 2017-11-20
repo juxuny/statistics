@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"encoding/json"
+	"time"
+	"strings"
 )
 
 const (
@@ -13,6 +15,8 @@ const (
 
 	//股票类型
 	STOCK_TYPE = "A"
+
+	BATCH_SIZE = 300
 )
 
 const CREATE_STOCK_TABLE_TEMPLATE = `
@@ -21,8 +25,7 @@ CREATE TABLE IF NOT EXISTS %s
   date            VARCHAR(10) NOT NULL
   COMMENT '日期',
   time            VARCHAR(8)  NOT NULL
-  COMMENT '时间'
-    PRIMARY KEY,
+  COMMENT '时间',
   current_price   DOUBLE      NULL
   COMMENT '当前价',
   open_price      DOUBLE      NULL
@@ -63,6 +66,8 @@ CREATE TABLE IF NOT EXISTS %s
 )
   COMMENT '数据表模板';
 `
+
+const CREATE_PRIMARY_KEY = `ALTER TABLE  %s ADD PRIMARY KEY (date, time);`
 
 
 type CollectorImpl struct {
@@ -126,8 +131,14 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 		if e != nil {
 			log.Print(e)
 			tx.Rollback()
-			return
+			continue
 		}
+		_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + v.Code))
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + v.Code))
 	}
 	e = tx.Commit()
 	if e != nil {
@@ -142,13 +153,18 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 
 //按股票代码创建表
 func (t *CollectorImpl) init(stockCode string) (e error) {
-	db, e := NewConnection(t.config)
-	if e != nil {
-		log.Print(e)
-		return
-	}
-	defer db.Close()
-	_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + stockCode))
+	//db, e := NewConnection(t.config)
+	//if e != nil {
+	//	log.Print(e)
+	//	return
+	//}
+	//defer db.Close()
+	//_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + stockCode))
+	//if e != nil {
+	//	log.Print(e)
+	//	return
+	//}
+	//db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + stockCode))
 	return
 }
 
@@ -156,12 +172,14 @@ func (t *CollectorImpl) FetchStockPrice(stockCode ...string) (r map[string]Stock
 	r = make(map[string]StockPrice)
 	for _, code := range stockCode {
 		//log.Print("fetch: ", code)
-		resp, e := http.Get("http://hq.sinajs.cn/list=" + code)
+		client := http.DefaultClient
+		client.Timeout = time.Duration(30 * time.Second)
+		resp, e := client.Get("http://hq.sinajs.cn/list=" + code)
+		//resp, e := http.Get()
 		if e != nil {
 			log.Print(e)
 			continue
 		}
-		defer resp.Body.Close()
 		//log.Print("fetch success, ", code)
 		if resp.StatusCode != 200 {
 			log.Printf("fetch data failed, stock code: %s", code)
@@ -171,6 +189,9 @@ func (t *CollectorImpl) FetchStockPrice(stockCode ...string) (r map[string]Stock
 		if e != nil {
 			log.Print(e)
 			continue
+		}
+		if !resp.Close {
+			resp.Body.Close()
 		}
 		s, e := GBK_UTF8(string(data))
 		if e != nil {
@@ -194,9 +215,6 @@ func (t *CollectorImpl) SaveStockPrice(price ...StockPrice) (e error) {
 	}
 	defer db.Close()
 	for _, p := range price {
-		//log.Print("test table")
-		t.init(p.StockCode)
-		//log.Print("init table finished")
 		table := t.Prefix + p.StockCode
 		sql := `INSERT INTO %s (date, time, current_price, open_price, yesterday_close, max, min, buy_1, buy_2, buy_3, buy_4, buy_5, buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5, sell_1, sell_2, sell_3, sell_4, sell_5, sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5, deal, deal_price)
 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT date FROM %s WHERE date = ? AND time = ?)
@@ -208,5 +226,45 @@ SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 				log.Print(e)
 			}
 	}
+	return
+}
+
+func (t *CollectorImpl) FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error) {
+	if len(stockCode) > BATCH_SIZE {
+		e = fmt.Errorf("the number of code is too large: %d", len(stockCode))
+		return
+	}
+	r = make(map[string]StockPrice)
+	q := ""
+	for _, c := range stockCode {
+		if q != "" {
+			q += ","
+		}
+		q += strings.Trim(c, " ")
+	}
+	resp, e := http.Get("http://hq.sinajs.cn/list=" + q)
+	if e != nil {
+		return
+	}
+	defer resp.Body.Close()
+	data, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		return
+	}
+	ss, e := GBK_UTF8(string(data))
+	if e != nil {
+		return
+	}
+	ss = strings.Trim(ss, "\n")
+	vars := strings.Split(ss, "\n")
+	for i, s := range vars {
+		tmp, e := ParseStockPrice(stockCode[i], s)
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		r[stockCode[i]] = tmp
+	}
+	e = nil
 	return
 }

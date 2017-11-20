@@ -13,6 +13,8 @@ var (
 	debug bool
 	logFileName string
 	log = stat.GetLogger()
+	verbose bool
+	initStockCode bool
 )
 
 func init() {
@@ -24,6 +26,8 @@ func init() {
 	flag.IntVar(&dbConfig.Port, "port", 3306, "port for database")
 	flag.BoolVar(&debug, "d", false, "debug mode")
 	flag.StringVar(&logFileName, "log", "1.log", "log file path")
+	flag.BoolVar(&verbose, "v", false, "verbose")
+	flag.BoolVar(&initStockCode, "i", true, "update table named stock_code")
 	flag.Parse()
 	stat.SetDebug(debug)
 	stat.SetLogFile(logFileName)
@@ -31,7 +35,9 @@ func init() {
 }
 
 func main() {
-	collectCode()
+	if initStockCode {
+		collectCode()
+	}
 	go func () {
 		for {
 			time.Sleep(12 * time.Hour)
@@ -70,26 +76,35 @@ func collectPrice() {
 		return
 	}
 	log.Printf("load stock code list success, size: %d", len(stockCodeList))
+
+	var codeList []string
+	for _, v := range stockCodeList {
+		if len(codeList) >= stat.BATCH_SIZE {
+			handle(codeList)
+			codeList = make([]string, 0)
+		}
+		codeList = append(codeList, v.Code)
+	}
+	handle(codeList)
+	log.Print("finished")
+}
+
+func handle(codeList []string) {
 	collector, e := stat.NewCollector(stat.STOCK_TYPE, dbConfig)
 	if e != nil {
-		log.Println(e)
-		return
+		log.Print(e)
 	}
-	log.Println("create collector success")
-	codes := make([]string, 0)
-	for _, v := range stockCodeList {
-		codes = append(codes, v.Code)
-	}
-	r, e := collector.FetchStockPrice(codes...)
+	r, e := collector.FetchStockPrices(codeList...)
 	if e != nil {
-		log.Println(e)
+		log.Print(e)
 		return
 	}
 	for _, stockPrice := range r {
 		e = collector.SaveStockPrice(stockPrice)
 		if e != nil {
-			log.Println(e)
+			log.Print(e)
+			continue
 		}
+		log.Print("saved: ", stockPrice.StockCode)
 	}
-	log.Print("finished!")
 }
