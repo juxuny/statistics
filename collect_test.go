@@ -4,6 +4,16 @@ import (
 	"testing"
 )
 
+func TestLoadCode(t *testing.T) {
+	SetDebug(true)
+	r, e := LoadStockCode(DEFAULT_DB_CONIG)
+	if e != nil {
+		t.Log(e)
+		t.Fail()
+	}
+	t.Log(r)
+}
+
 func TestCollectStockData (t *testing.T) {
 	SetDebug(true)
 	c, e := NewCollector("A", DEFAULT_DB_CONIG)
@@ -11,11 +21,13 @@ func TestCollectStockData (t *testing.T) {
 		t.Log(e)
 		t.Fail()
 	}
-	e = c.init("sh601006")
-	if e != nil {
-		t.Log(e)
-		t.Fail()
-	}
+	//stockCodes, e := c.FetchStockCode()
+	//if e != nil {
+	//	t.Log(e)
+	//	t.Fail()
+	//}
+	//c.SaveStockCode(stockCodes)
+
 	r, e := c.FetchStockPrices("sh601006", "sh600439")
 	if e != nil {
 		t.Log(e)
@@ -27,16 +39,6 @@ func TestCollectStockData (t *testing.T) {
 		t.Log(e)
 		t.Fail()
 	}
-}
-
-func TestLoadCode(t *testing.T) {
-	SetDebug(true)
-	r, e := LoadStockCode(DEFAULT_DB_CONIG)
-	if e != nil {
-		t.Log(e)
-		t.Fail()
-	}
-	t.Log(r)
 }
 
 func TestLogger(t *testing.T) {

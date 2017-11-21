@@ -99,6 +99,7 @@ func (t *CollectorImpl) FetchStockCode()(r []StockCode, e error) {
 	}
 	defer resp.Body.Close()
 	log.Print(resp.Header)
+	log.Print("fetch stock code finished.")
 	data, e := ioutil.ReadAll(resp.Body)
 	if e != nil {
 		return
@@ -138,7 +139,10 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 			log.Print(e)
 			continue
 		}
-		db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + v.Code))
+		_, e = db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + v.Code))
+		if e != nil {
+			continue
+		}
 	}
 	e = tx.Commit()
 	if e != nil {
@@ -216,12 +220,11 @@ func (t *CollectorImpl) SaveStockPrice(price ...StockPrice) (e error) {
 	defer db.Close()
 	for _, p := range price {
 		table := t.Prefix + p.StockCode
-		sql := `INSERT INTO %s (date, time, current_price, open_price, yesterday_close, max, min, buy_1, buy_2, buy_3, buy_4, buy_5, buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5, sell_1, sell_2, sell_3, sell_4, sell_5, sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5, deal, deal_price)
-SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT date FROM %s WHERE date = ? AND time = ?)
+		sql := `INSERT IGNORE INTO %s (date, time, current_price, open_price, yesterday_close, max, min, buy_1, buy_2, buy_3, buy_4, buy_5, buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5, sell_1, sell_2, sell_3, sell_4, sell_5, sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5, deal, deal_price)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 		//log.Print("save stock price")
-		_, e = db.Exec(fmt.Sprintf(sql, table, table), p.Date, p.Time, p.CurrentPrice, p.OpenPrice, p.YesterdayPrice, p.Max, p.Min, p.Buy[0], p.Buy[1], p.Buy[2], p.Buy[3], p.Buy[4], p.BuyPrice[0], p.BuyPrice[1], p.BuyPrice[2], p.BuyPrice[3], p.BuyPrice[4], p.Sell[0], p.Sell[1], p.Sell[2], p.Sell[3], p.Sell[4], p.SellPrice[0], p.SellPrice[1], p.SellPrice[2], p.SellPrice[3], p.SellPrice[4], p.Deal, p.DealPrice,
-			p.Date, p.Time)
+		_, e = db.Exec(fmt.Sprintf(sql, table), p.Date, p.Time, p.CurrentPrice, p.OpenPrice, p.YesterdayPrice, p.Max, p.Min, p.Buy[0], p.Buy[1], p.Buy[2], p.Buy[3], p.Buy[4], p.BuyPrice[0], p.BuyPrice[1], p.BuyPrice[2], p.BuyPrice[3], p.BuyPrice[4], p.Sell[0], p.Sell[1], p.Sell[2], p.Sell[3], p.Sell[4], p.SellPrice[0], p.SellPrice[1], p.SellPrice[2], p.SellPrice[3], p.SellPrice[4], p.Deal, p.DealPrice, )
 			if e != nil {
 				log.Print(e)
 			}
