@@ -15,7 +15,7 @@ const (
 	STOCK_CODE_API = "http://www.ctxalgo.com/api/stocks"
 
 	//股票类型
-	STOCK_TYPE = "A"
+	STOCK_TYPE_A = "A"
 
 	BATCH_SIZE = 300
 )
@@ -78,7 +78,7 @@ type CollectorImpl struct {
 }
 
 func NewCollector(dbConfig DBConfig) (r Collector) {
-	c := &CollectorImpl{Type: STOCK_TYPE, Prefix: "sina_"}
+	c := &CollectorImpl{Type: STOCK_TYPE_A, Prefix: "sina_"}
 	c.config = dbConfig
 	r = c
 	return
@@ -268,6 +268,7 @@ func (t *FCollector) FetchStockCode() (r []StockCode, e error) {
 		"A", "sa", "sz", //A股，深A,(其中sz是对应新浪数据库里的前缀)
 		"B", "hb", "sh",
 		"B", "sb", "sz",
+		"A", "gem", "sz",//A股，创业板
 	}
 	for j := 0; j < len(ts); j+=3 {
 		ret, e := t.fetch(ts[j], ts[j+1], ts[j+2])
