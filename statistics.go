@@ -4,7 +4,6 @@ import (
 	"strings"
 	"fmt"
 	"strconv"
-	"github.com/docker/distribution/Godeps/_workspace/src/github.com/ncw/swift/rs"
 )
 
 type StockCode struct {
@@ -134,14 +133,14 @@ func LoadStockCode(config DBConfig) (r []StockCode, e error) {
 		return
 	}
 	defer db.Close()
-	rs, e := db.Query("SELECT code, name, type FROM stock_code")
+	ret, e := db.Query("SELECT code, name, type FROM stock_code")
 	if e != nil {
 		return
 	}
-	defer rs.Close()
-	for rs.Next() {
+	defer ret.Close()
+	for ret.Next() {
 		t := StockCode{}
-		e := rs.Scan(&t.Code, &t.Name, &t.Type)
+		e := ret.Scan(&t.Code, &t.Name, &t.Type)
 		if e != nil {
 			log.Print(e)
 			continue
