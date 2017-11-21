@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 	"strings"
+	"github.com/opesun/goquery"
 )
 
 const (
@@ -76,23 +77,15 @@ type CollectorImpl struct {
 	Prefix string
 }
 
-func NewCollector(t string, dbConfig DBConfig) (r Collector, e error) {
-	c := &CollectorImpl{Type: t, Prefix: "sina_"}
+func NewCollector(dbConfig DBConfig) (r Collector) {
+	c := &CollectorImpl{Type: STOCK_TYPE, Prefix: "sina_"}
 	c.config = dbConfig
 	r = c
 	return
 }
 
 func (t *CollectorImpl) FetchStockCode()(r []StockCode, e error) {
-	url := ""
-	switch (t.Type) {
-	case STOCK_TYPE:
-		url = STOCK_CODE_API
-		break
-	default:
-		return r, fmt.Errorf("unkonw type: %s", t.Type)
-		break
-	}
+	url := STOCK_CODE_API
 	resp, e := http.Get(url)
 	if resp.StatusCode != 200 {
 		return r, fmt.Errorf("HTTP ERROR: %d", resp.StatusCode)
@@ -122,12 +115,12 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 		return
 	}
 	defer db.Close()
-	tx, e := db.Begin()
-	if e != nil {
-		log.Print(e)
-		return
-	}
 	for _, v := range r {
+		tx, e := db.Begin()
+		if e != nil {
+			log.Print(e)
+			continue
+		}
 		_, e = tx.Exec("INSERT INTO stock_code (code, name, type) SELECT ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT id FROM stock_code WHERE code = ?)", v.Code, v.Name, v.Type, v.Code)
 		if e != nil {
 			log.Print(e)
@@ -137,38 +130,21 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 		_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + v.Code))
 		if e != nil {
 			log.Print(e)
+			tx.Rollback()
 			continue
 		}
 		_, e = db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + v.Code))
 		if e != nil {
+			tx.Rollback()
 			continue
 		}
-	}
-	e = tx.Commit()
-	if e != nil {
-		log.Print(e)
-	}
-	e = db.Close()
-	if e != nil {
-		log.Print(e)
+		e = tx.Commit()
 	}
 	return
 }
 
 //按股票代码创建表
 func (t *CollectorImpl) init(stockCode string) (e error) {
-	//db, e := NewConnection(t.config)
-	//if e != nil {
-	//	log.Print(e)
-	//	return
-	//}
-	//defer db.Close()
-	//_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + stockCode))
-	//if e != nil {
-	//	log.Print(e)
-	//	return
-	//}
-	//db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + stockCode))
 	return
 }
 
@@ -269,5 +245,73 @@ func (t *CollectorImpl) FetchStockPrices(stockCode ...string) (r map[string]Stoc
 		r[stockCode[i]] = tmp
 	}
 	e = nil
+	return
+}
+
+
+//抓取凤凰网的股票代码
+type FCollector struct {
+	CollectorImpl
+}
+
+func NewFCollector(config DBConfig) (r Collector) {
+	c := &FCollector{}
+	c.config = config
+	c.Prefix = "sina_"
+	r = c
+	return
+}
+
+func (t *FCollector) FetchStockCode() (r []StockCode, e error) {
+	ts := []string{
+		"A", "ha", "sh", // A 股, 沪A, (其中sh是对应新浪数据库里的前缀)
+		"A", "sa", "sz", //A股，深A,(其中sz是对应新浪数据库里的前缀)
+		"B", "hb", "sh",
+		"B", "sb", "sz",
+	}
+	for j := 0; j < len(ts); j+=3 {
+		ret, e := t.fetch(ts[j], ts[j+1], ts[j+2])
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		for i := 0; i < len(ret); i++ {
+			r = append(r, ret[i])
+		}
+	}
+	return
+}
+
+// stockType: A 表示A股
+// stockClass: sh
+func (t *FCollector) fetch(stockType, stockClass, sinaPrefix string) (r []StockCode, e error) {
+	log.Print("fetch ", stockType, stockClass)
+	var tt string
+	switch stockType {
+	case "A":
+		tt = "stock_a"
+	case "B":
+		tt = "stock_b"
+	default:
+		e = fmt.Errorf("unknown type: %s", stockType)
+		return
+	}
+	resp, e := goquery.ParseUrl(fmt.Sprintf("http://app.finance.ifeng.com/hq/list.php?type=%s&class=%s", strings.ToLower(tt), strings.ToLower(stockClass)))
+	if e != nil {
+		return
+	}
+	ret := resp.Find(".result ul li")
+	for i := 0; i < ret.Length(); i++ {
+		tmp := strings.Trim(ret.Eq(i).Text(), " \n")
+		start := strings.Index(tmp, "(")
+		end := strings.Index(tmp, ")")
+		if start > 0 && end > 0 && start < end {
+			stockCode := StockCode{}
+			stockCode.Type = stockType
+			stockCode.Name = tmp[:start]
+				stockCode.Code = sinaPrefix + tmp[start+1:end]
+			r = append(r, stockCode)
+		}
+	}
 	return
 }

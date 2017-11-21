@@ -14,7 +14,6 @@ var (
 	logFileName string
 	log = stat.GetLogger()
 	verbose bool
-	initStockCode bool
 )
 
 func init() {
@@ -24,10 +23,10 @@ func init() {
 	flag.StringVar(&dbConfig.User, "u", "root", "user for database")
 	flag.StringVar(&dbConfig.Password, "p", "123456", "password")
 	flag.IntVar(&dbConfig.Port, "port", 3306, "port for database")
+
 	flag.BoolVar(&debug, "d", false, "debug mode")
 	flag.StringVar(&logFileName, "log", "1.log", "log file path")
 	flag.BoolVar(&verbose, "v", false, "verbose")
-	flag.BoolVar(&initStockCode, "i", true, "update table named stock_code")
 	flag.Parse()
 	stat.SetDebug(debug)
 	stat.SetLogFile(logFileName)
@@ -35,37 +34,10 @@ func init() {
 }
 
 func main() {
-	if initStockCode {
-		collectCode()
-	}
-	go func () {
-		for {
-			time.Sleep(12 * time.Hour)
-			go collectCode()
-		}
-	}()
 	for {
 		go collectPrice()
 		time.Sleep(time.Minute)
 	}
-}
-
-
-func collectCode() {
-	collector, e := stat.NewCollector(stat.STOCK_TYPE, dbConfig)
-	if e != nil {
-		log.Panic(e)
-	}
-	r, e := collector.FetchStockCode()
-	if e != nil {
-		log.Print(e)
-	}
-	e = collector.SaveStockCode(r)
-	if e != nil {
-		log.Print(e)
-		return
-	}
-	log.Println("save stock code success")
 }
 
 func collectPrice() {
@@ -90,10 +62,7 @@ func collectPrice() {
 }
 
 func handle(codeList []string) {
-	collector, e := stat.NewCollector(stat.STOCK_TYPE, dbConfig)
-	if e != nil {
-		log.Print(e)
-	}
+	collector := stat.NewCollector(dbConfig)
 	r, e := collector.FetchStockPrices(codeList...)
 	if e != nil {
 		log.Print(e)
