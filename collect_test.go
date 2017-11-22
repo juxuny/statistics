@@ -16,11 +16,8 @@ func TestLoadCode(t *testing.T) {
 
 func TestCollectStockData (t *testing.T) {
 	SetDebug(true)
-	c, e := NewCollector("A", DEFAULT_DB_CONIG)
-	if e != nil {
-		t.Log(e)
-		t.Fail()
-	}
+	c := NewCollector(DEFAULT_DB_CONIG)
+
 	//stockCodes, e := c.FetchStockCode()
 	//if e != nil {
 	//	t.Log(e)
@@ -46,6 +43,37 @@ func TestLogger(t *testing.T) {
 	l := GetLogger()
 	if l == nil {
 		t.Log("l is nil")
+		t.Fail()
+	}
+}
+
+func TestMarketIndex(t *testing.T) {
+	marketIndexes, e := LoadMarketIndexes(DEFAULT_DB_CONIG)
+	if e != nil {
+		t.Log(e)
+		t.Fail()
+		return
+	}
+	t.Log(marketIndexes)
+	codes := []string{}
+	for _, v := range marketIndexes {
+		codes = append(codes, v.Code)
+	}
+	collector := NewCollector(DEFAULT_DB_CONIG)
+	r, e := collector.FetchMarketIndexes(codes...)
+	if e != nil {
+		t.Log(e)
+		t.Fail()
+		return
+	}
+	t.Log(r)
+	var tmp []MarketIndexInfo
+	for _, v := range r {
+		tmp = append(tmp, v)
+	}
+	e = collector.SaveMarketIndexesData(tmp...)
+	if e != nil {
+		t.Log(e)
 		t.Fail()
 	}
 }

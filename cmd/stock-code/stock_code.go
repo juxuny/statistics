@@ -1,3 +1,4 @@
+//从凤凰网获取所有A,B股的股票代码
 package main
 
 import (

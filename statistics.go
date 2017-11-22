@@ -32,6 +32,31 @@ type StockPrice struct {
 	DealPrice float64
 }
 
+type MarketIndex struct {
+	//数据库里自增ID
+	Id int
+	Code string
+	Name string
+}
+
+
+type MarketIndexInfo struct {
+	Code string
+	Name string
+	Date string
+	Time string
+	//当前点数
+	Point float64
+	//当前价格
+	Price float64
+	//成交率
+	ChangeRate float64
+	//成交量（手）
+	Deal float64
+	//成交额（万元）
+	DealPrice float64
+}
+
 
 //解释从新浪获取到的原始数据
 //  e.g var hq_str_sh601006="大秦铁路,8.800,8.790,9.030,9.060,8.700,9.030,9.040,109367311,971205411.000,73530,9.030,895919,9.020,555200,9.010,29700,9.000,137700,8.990,256000,9.040,772531,9.050,1108457,9.060,269100,9.070,248000,9.080,2017-11-17,15:00:00,00";
@@ -115,6 +140,35 @@ func ParseStockPrice(stockCode string, resp string) (r StockPrice, e error) {
 	return
 }
 
+
+func ParseMarketIndex(indexCode, resp string) (r MarketIndexInfo, e error) {
+	ii := strings.Index(resp, "\"")
+	if ii == -1 {
+		e = fmt.Errorf("invalid response data")
+		return
+	}
+	resp = resp[ii+1:]
+	ii = strings.Index(resp, "\"")
+	if ii == -1 {
+		e = fmt.Errorf("invalid response data")
+		return
+	}
+	resp = resp[: ii]
+	s := strings.Split(resp, ",")
+	if len(s) != 6 {
+		e = fmt.Errorf("invalid response data, filed length: %d", len(s))
+		return
+	}
+	r.Code = indexCode
+	r.Name = s[0]
+	r.Price, e = strconv.ParseFloat(s[1], 64)
+	r.Point, e = strconv.ParseFloat(s[2], 64)
+	r.ChangeRate, e = strconv.ParseFloat(s[3], 64)
+	r.Deal, e = strconv.ParseFloat(s[4], 64)
+	r.DealPrice, e = strconv.ParseFloat(s[5], 64)
+	return
+}
+
 type Collector interface {
 	FetchStockCode() (r []StockCode, e error)
 	SaveStockCode(r []StockCode) (e error)
@@ -123,6 +177,9 @@ type Collector interface {
 	FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error)
 	SaveStockPrice(price ...StockPrice) (e error)
 	init(stockCode string) (e error)
+	//获取大盘指标数据
+	FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error)
+	SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error)
 }
 
 
@@ -148,5 +205,58 @@ func LoadStockCode(config DBConfig) (r []StockCode, e error) {
 		r = append(r, t)
 	}
 
+	return
+}
+
+
+//从数据库里加载所有大盘指标代码
+//并创建对应的表
+func LoadMarketIndexes(config DBConfig)(r []MarketIndex, e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	ret, e := db.Query("SELECT id, code, name FROM index_list")
+	if e != nil {
+		return
+	}
+	defer ret.Close()
+	for ret.Next() {
+		tmp := MarketIndex{}
+		e = ret.Scan(&tmp.Id, &tmp.Code, &tmp.Name)
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		r = append(r, tmp)
+	}
+
+	for _, v := range r {
+		sql := fmt.Sprintf(`-- auto-generated definition
+CREATE TABLE market_index_sina_%s
+(
+  date        VARCHAR(10) NOT NULL,
+  time        VARCHAR(8)  NOT NULL,
+  price       DOUBLE      NULL
+  COMMENT '当前价格',
+  point       DOUBLE      NULL
+  COMMENT '涨跌额',
+  change_rate DOUBLE      NULL
+  COMMENT '涨跌率',
+  deal        DOUBLE      NULL
+  COMMENT '成交量（手）',
+  deal_price  DOUBLE      NULL
+  COMMENT '成交额（万元）',
+  PRIMARY KEY (date, time)
+) COMMENT '%s';`, v.Code, v.Name)
+		_, e = db.Exec(sql)
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+	}
+	//为各个指标创建记录数据的表
+	e = nil
 	return
 }

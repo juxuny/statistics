@@ -248,6 +248,63 @@ func (t *CollectorImpl) FetchStockPrices(stockCode ...string) (r map[string]Stoc
 	return
 }
 
+//获取大盘指数
+func (t *CollectorImpl) FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error) {
+	if len(indexCode) > BATCH_SIZE {
+		e = fmt.Errorf("the number of code is too large, %d", len(indexCode))
+		return
+	}
+	r = make(map[string]MarketIndexInfo)
+	q := ""
+	for _, c := range indexCode {
+		if q != "" {
+			q += ","
+		}
+		q += strings.Trim(c, " ")
+	}
+	resp, e := http.Get("http://hq.sinajs.cn/list=" + q)
+	if e != nil {
+		return
+	}
+	defer resp.Body.Close()
+	data, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		return
+	}
+	ss, e := GBK_UTF8(string(data))
+	if e != nil {
+		return
+	}
+	ss = strings.Trim(ss, "\n")
+	vars := strings.Split(ss, "\n")
+	for i, s := range vars {
+		tmp, e := ParseMarketIndex(indexCode[i], s)
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		r[indexCode[i]] = tmp
+	}
+	e = nil
+	return
+}
+
+func (t *CollectorImpl) SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error) {
+	db, e := NewConnection(t.config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	for _, i := range marketIndexInfo {
+		_, e = db.Exec(fmt.Sprintf("INSERT INTO market_index_sina_%s (date, time, point, price, change_rate, deal, deal_price) VALUES (LEFT(FROM_UNIXTIME(UNIX_TIMESTAMP()), 10), MID(FROM_UNIXTIME(UNIX_TIMESTAMP()), 12, 19), ?, ?, ?, ?, ?)", i.Code), i.Point, i.Price, i.ChangeRate, i.Deal, i.DealPrice)
+		if e != nil{
+			log.Print(e)
+			continue
+		}
+	}
+	return
+}
+
 
 //抓取凤凰网的股票代码
 type FCollector struct {
