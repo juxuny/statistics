@@ -14,6 +14,7 @@ var (
 	logFileName string
 	log = stat.GetLogger()
 	verbose bool
+	start, end string
 )
 
 func init() {
@@ -27,6 +28,8 @@ func init() {
 	flag.BoolVar(&debug, "d", false, "debug mode")
 	flag.StringVar(&logFileName, "log", "1.log", "log file path")
 	flag.BoolVar(&verbose, "v", false, "verbose")
+	flag.StringVar(&start, "start", "09:00", "time to start")
+	flag.StringVar(&end, "end", "16:00", "time to exit")
 	flag.Parse()
 	stat.SetDebug(debug)
 	stat.SetLogFile(logFileName)
@@ -35,7 +38,11 @@ func init() {
 
 func main() {
 	for {
-		go collectPrice()
+		current := time.Now().Format("15:04")
+		if current >= start && current <= end {
+			go collectPrice()
+			go collectMarketIndexes()
+		}
 		time.Sleep(time.Minute)
 	}
 }
@@ -78,4 +85,32 @@ func handle(codeList []string) {
 			log.Print("saved: ", stockPrice.StockCode)
 		}
 	}
+}
+
+func collectMarketIndexes() {
+	collector := stat.NewCollector(dbConfig)
+	marketIndexes, e := stat.LoadMarketIndexes(dbConfig)
+	if e != nil {
+		log.Print(e)
+		return
+	}
+	codes := make([]string, 0)
+	for _, v := range marketIndexes {
+		codes = append(codes, v.Code)
+	}
+	r, e := collector.FetchMarketIndexes(codes...)
+	if e != nil {
+		log.Print(e)
+		return
+	}
+	var tmp []stat.MarketIndexInfo
+	for _, v := range r {
+		tmp = append(tmp, v)
+	}
+	e = collector.SaveMarketIndexesData(tmp...)
+	if e != nil {
+		log.Print(e)
+		return
+	}
+	log.Print("collect market index data finished.")
 }

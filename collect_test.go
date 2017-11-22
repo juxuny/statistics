@@ -55,7 +55,7 @@ func TestMarketIndex(t *testing.T) {
 		return
 	}
 	t.Log(marketIndexes)
-	codes := []string{}
+	codes := make([]string, 0)
 	for _, v := range marketIndexes {
 		codes = append(codes, v.Code)
 	}
