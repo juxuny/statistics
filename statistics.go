@@ -234,7 +234,7 @@ func LoadMarketIndexes(config DBConfig)(r []MarketIndex, e error) {
 
 	for _, v := range r {
 		sql := fmt.Sprintf(`-- auto-generated definition
-CREATE TABLE market_index_sina_%s
+CREATE TABLE IF NOT EXISTS market_index_sina_%s
 (
   date        VARCHAR(10) NOT NULL,
   time        VARCHAR(8)  NOT NULL,

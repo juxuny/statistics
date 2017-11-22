@@ -39,6 +39,7 @@ func init() {
 func main() {
 	for {
 		current := time.Now().Format("15:04")
+		log.Print("current: ", current)
 		if current >= start && current <= end {
 			go collectPrice()
 			go collectMarketIndexes()
