@@ -14,49 +14,6 @@ type StockCode struct {
 	Name string
 }
 
-type StockPrice struct {
-	StockCode string
-	Name string
-	Date string
-	Time string
-	CurrentPrice float64
-	OpenPrice float64
-	YesterdayPrice float64
-	Max float64
-	Min float64
-	BuyPrice [5]float64
-	Buy [5]float64
-	SellPrice [5]float64
-	Sell [5]float64
-	Deal float64
-	DealPrice float64
-}
-
-type MarketIndex struct {
-	//数据库里自增ID
-	Id int
-	Code string
-	Name string
-}
-
-
-type MarketIndexInfo struct {
-	Code string
-	Name string
-	Date string
-	Time string
-	//当前点数
-	Point float64
-	//当前价格
-	Price float64
-	//成交率
-	ChangeRate float64
-	//成交量（手）
-	Deal float64
-	//成交额（万元）
-	DealPrice float64
-}
-
 
 //解释从新浪获取到的原始数据
 //  e.g var hq_str_sh601006="大秦铁路,8.800,8.790,9.030,9.060,8.700,9.030,9.040,109367311,971205411.000,73530,9.030,895919,9.020,555200,9.010,29700,9.000,137700,8.990,256000,9.040,772531,9.050,1108457,9.060,269100,9.070,248000,9.080,2017-11-17,15:00:00,00";
@@ -232,8 +189,9 @@ func LoadMarketIndexes(config DBConfig)(r []MarketIndex, e error) {
 		r = append(r, tmp)
 	}
 
-	for _, v := range r {
-		sql := fmt.Sprintf(`-- auto-generated definition
+	if config.InitTable {
+		for _, v := range r {
+			sql := fmt.Sprintf(`-- auto-generated definition
 CREATE TABLE IF NOT EXISTS market_index_sina_%s
 (
   date        VARCHAR(10) NOT NULL,
@@ -250,13 +208,76 @@ CREATE TABLE IF NOT EXISTS market_index_sina_%s
   COMMENT '成交额（万元）',
   PRIMARY KEY (date, time)
 ) COMMENT '%s';`, v.Code, v.Name)
-		_, e = db.Exec(sql)
-		if e != nil {
-			log.Print(e)
-			continue
+			_, e = db.Exec(sql)
+			if e != nil {
+				log.Print(e)
+				continue
+			}
 		}
 	}
+
 	//为各个指标创建记录数据的表
 	e = nil
+	return
+}
+
+//获取一天的股价
+func GetOneDay(config DBConfig, stockCode, date string) (data StockPriceList, e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	sql := fmt.Sprintf(`SELECT date, time, current_price, open_price, yesterday_close, max, min,
+  buy_1, buy_2, buy_3, buy_4, buy_5,
+  buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5,
+  sell_1,sell_2, sell_3, sell_4, sell_5,
+  sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5,
+  deal, deal_price
+FROM sina_%s WHERE date=?`, stockCode)
+	rs, e := db.Query(sql, date)
+	if e != nil {
+		return
+	}
+	defer rs.Close()
+	for rs.Next() {
+		tmp := StockPrice{}
+		e = rs.Scan(
+			&tmp.Date, &tmp.Time, &tmp.CurrentPrice, &tmp.OpenPrice, &tmp.YesterdayPrice, &tmp.Max, &tmp.Min,
+			&tmp.Buy[0], &tmp.Buy[1],&tmp.Buy[2],&tmp.Buy[3],&tmp.Buy[4],
+			&tmp.BuyPrice[0], &tmp.BuyPrice[1],&tmp.BuyPrice[2],&tmp.BuyPrice[3],&tmp.BuyPrice[4],
+			&tmp.Sell[0], &tmp.Sell[1],&tmp.Sell[2],&tmp.Sell[3],&tmp.Sell[4],
+			&tmp.SellPrice[0], &tmp.SellPrice[1],&tmp.SellPrice[2],&tmp.SellPrice[3],&tmp.SellPrice[4],
+			&tmp.Deal, &tmp.DealPrice,
+		)
+		if e != nil {
+			break
+		}
+		data = append(data, tmp)
+	}
+	return
+}
+
+//获取大盘指标一天的数据
+func GetOneDayIndex(config DBConfig, code, date string) (data MarketIndexInfoList, e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	sql := fmt.Sprintf(`SELECT date, time, price, point, change_rate, deal, deal_price FROM market_index_sina_%s WHERE date=?`, code)
+	rs, e := db.Query(sql, date)
+	if e != nil {
+		return
+	}
+	defer rs.Close()
+	for rs.Next() {
+		tmp := MarketIndexInfo{}
+		e = rs.Scan(&tmp.Date, &tmp.Time, &tmp.Price, &tmp.Point, &tmp.ChangeRate, &tmp.Deal, &tmp.DealPrice)
+		if e != nil {
+			break
+		}
+		data = append(data, tmp)
+	}
 	return
 }

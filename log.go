@@ -10,12 +10,12 @@ var log *l.Logger
 var w = &Writer{}
 
 func init() {
-	log = l.New(w, "", l.LUTC|l.Ldate|l.Ltime|l.Lshortfile)
+	log = l.New(w, "", l.Ldate|l.Ltime|l.Lshortfile)
 }
 
 func SetLogFile(fileName string) (e error) {
 	if fileName != "" {
-		log = l.New(&FileWriter{fileName: fileName}, "", l.LUTC|l.Ldate|l.Ltime|l.Lshortfile)
+		log = l.New(&FileWriter{fileName: fileName}, "", l.Ldate|l.Ltime|l.Lshortfile)
 		if log == nil {
 			l.Panic("log is nil")
 		}

@@ -6,6 +6,7 @@ type DBConfig struct {
 	User string
 	Password string
 	DatabaseName string
+	InitTable bool
 }
 
 var _DEBUG = false
@@ -23,5 +24,6 @@ func NewDefaultDBConfig() (r DBConfig) {
 	r.Host = "127.0.0.1"
 	r.Port = 3306
 	r.DatabaseName = "stock"
+	r.InitTable = true
 	return
 }
