@@ -56,6 +56,9 @@ func main() {
 	case "export": {
 		export()
 	}
+	case "clear": {
+		clear()
+	}
 	default:
 		flag.PrintDefaults()
 	}

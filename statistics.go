@@ -281,3 +281,29 @@ func GetOneDayIndex(config DBConfig, code, date string) (data MarketIndexInfoLis
 	}
 	return
 }
+
+
+//清除一天大盘指数数据
+func ClearOneDayIndex(config DBConfig, code, date string) (e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	sql := fmt.Sprintf(`DELETE FROM market_index_sina_%s WHERE date=?`, code)
+	_, e = db.Exec(sql, date)
+	return
+}
+
+
+//清除某一天股价的数据
+func ClearOneDay(config DBConfig, code, date string) (e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	sql := fmt.Sprintf(`DELETE FROM sina_%s WHERE date=?`, code)
+	_, e = db.Exec(sql, date)
+	return
+}
