@@ -15,6 +15,7 @@ var _STANDARDIZATION_HEADER = []string{
 	"sell_price_1", "sell_price_2", "sell_price_3", "sell_price_4", "sell_price_5",
 	"sell_1", "sell_2", "sell_3", "sell_4", "sell_5",
 	"deal", "deal_price",
+	"growth_rate",
 	"mean_price", "mean_sell", "mean_buy", "mean_deal_volume", "mean_deal_price",
 	"sd_price", "sd_sell", "sd_buy", "sd_deal_volume", "sd_deal_price",
 	"week_0", "week_1", "week_2", "week_3", "week_4", "week_5", "week_6",
@@ -88,6 +89,13 @@ func pre() {
 			log.Print(e)
 			continue
 		}
+		//计算与昨天相比的增长率
+		growthRate := make([]float64, len(data))
+		for i := 0; i < len(data); i ++ {
+			growthRate[i] = (data[i].CurrentPrice - data[i].OpenPrice) / data[i].OpenPrice
+		}
+
+		//数据标准化
 		dataStandardization, mean, sd, e := data.Standardization()
 		if e != nil {
 			log.Println(e)
@@ -101,8 +109,8 @@ func pre() {
 			continue
 		}
 		w := csv.NewWriter(f)
-		w.Write(_STANDARDIZATION_HEADER[2:])
-		for _, v := range dataStandardization {
+		w.Write(_STANDARDIZATION_HEADER[2:]) //remove the stock's name and the stock's code
+		for i, v := range dataStandardization {
 			t, e := time.Parse("2006-01-02 15:04:05", v.Date + " " + v.Time)
 			if e != nil {
 				log.Println(e)
@@ -115,7 +123,7 @@ func pre() {
 				continue
 			}
 			row := v.ToStrings()[2:]
-			row = stat.MergeStrings(row, mean.ToStrings(), sd.ToStrings(), weekOneHot.ToStrings(), timeOneHot.ToStrings())
+			row = stat.MergeStrings(row, []string{fmt.Sprintf("%v", growthRate[i])}, mean.ToStrings(), sd.ToStrings(), weekOneHot.ToStrings(), timeOneHot.ToStrings())
 			e = w.Write(row)
 			if e != nil {
 				log.Println(e)
