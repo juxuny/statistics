@@ -307,3 +307,41 @@ func ClearOneDay(config DBConfig, code, date string) (e error) {
 	_, e = db.Exec(sql, date)
 	return
 }
+
+
+//获取时间段的股价
+func GetDurationStock(config DBConfig, stockCode, start, end string, pos, pageLen int) (data StockPriceList, e error) {
+	db, e := NewConnection(config)
+	if e != nil {
+		return
+	}
+	defer db.Close()
+	sql := fmt.Sprintf(`SELECT date, time, current_price, open_price, yesterday_close, max, min,
+  buy_1, buy_2, buy_3, buy_4, buy_5,
+  buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5,
+  sell_1,sell_2, sell_3, sell_4, sell_5,
+  sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5,
+  deal, deal_price
+FROM sina_%s WHERE date >= ? AND date <= ? AND time >= '09:25:00' AND time <= '16:00:00' LIMIT ?, ?`, stockCode)
+	rs, e := db.Query(sql, start, end, pos, pageLen)
+	if e != nil {
+		return
+	}
+	defer rs.Close()
+	for rs.Next() {
+		tmp := StockPrice{StockCode:stockCode}
+		e = rs.Scan(
+			&tmp.Date, &tmp.Time, &tmp.CurrentPrice, &tmp.OpenPrice, &tmp.YesterdayPrice, &tmp.Max, &tmp.Min,
+			&tmp.Buy[0], &tmp.Buy[1],&tmp.Buy[2],&tmp.Buy[3],&tmp.Buy[4],
+			&tmp.BuyPrice[0], &tmp.BuyPrice[1],&tmp.BuyPrice[2],&tmp.BuyPrice[3],&tmp.BuyPrice[4],
+			&tmp.Sell[0], &tmp.Sell[1],&tmp.Sell[2],&tmp.Sell[3],&tmp.Sell[4],
+			&tmp.SellPrice[0], &tmp.SellPrice[1],&tmp.SellPrice[2],&tmp.SellPrice[3],&tmp.SellPrice[4],
+			&tmp.Deal, &tmp.DealPrice,
+		)
+		if e != nil {
+			break
+		}
+		data = append(data, tmp)
+	}
+	return
+}
