@@ -20,6 +20,7 @@ var (
 	code string
 	//csv目录
 	out string
+	dir string
 	start string
 	end string
 )
@@ -48,6 +49,7 @@ func init() {
 	flag.StringVar(&end, "end", "", "YYYY-MM-DD")
 	flag.StringVar(&code, "code", "", "stock code, e.g sz300715")
 	flag.StringVar(&out, "out", ".", "output dir")
+	flag.StringVar(&dir, "dir", "", "data directory")
 
 	flag.Parse()
 	stat.SetDebug(debug)
@@ -65,6 +67,9 @@ func main() {
 	}
 	case "pre": {
 		pre()
+	}
+	case "import": {
+		importDir()
 	}
 	default:
 		flag.PrintDefaults()

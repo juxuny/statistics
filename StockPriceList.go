@@ -115,3 +115,15 @@ func (t StockPriceList) Standardization() (ret StockPriceStandardizationList, me
 	}
 	return
 }
+
+//用于解释CSV文件读出来的数据
+func ParseStockPriceListFromStrings(sockCode, name string, data [][]string) (ret StockPriceList, e error) {
+	for _, row := range data {
+		tmp, e := ParseStockPriceFromStrings(MergeStrings([]string{sockCode, name}, row))
+		if e != nil {
+			break
+		}
+		ret = append(ret, tmp)
+	}
+	return
+}

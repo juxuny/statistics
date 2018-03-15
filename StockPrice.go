@@ -1,6 +1,9 @@
 package statistics
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 var CSV_HEADER = []string{
 	"stock_code", "name", "date", "time", "current_price", "open_price","yesterday_price", "max", "min",
@@ -64,5 +67,81 @@ func (t StockPrice) ToStrings() (r []string) {
 		fmt.Sprintf("%v", t.Deal),
 		fmt.Sprintf("%v", t.DealPrice),
 	}
+	return
+}
+
+//与ToStrings方法相反
+func ParseStockPriceFromStrings(row []string) (ret StockPrice, e error) {
+	if len(row) != 31 {
+		e = fmt.Errorf("invalid row len: %v", len(row))
+		return
+	}
+	if row[0] == "" {
+		e = fmt.Errorf("invalid data: first element is the stock code, it can't be empty")
+		return
+	}
+	ret.StockCode = row[0]
+	ret.Name = row[1]
+	ret.Date = row[2]
+	ret.Time = row[3]
+	ret.CurrentPrice, e = strconv.ParseFloat(row[4], 64)
+	if e != nil { return ret, e }
+	ret.OpenPrice, e = strconv.ParseFloat(row[5], 64)
+	if e != nil { return ret, e }
+	ret.YesterdayPrice, e = strconv.ParseFloat(row[6], 64)
+	if e != nil { return ret, e }
+	ret.Max, e = strconv.ParseFloat(row[7], 64)
+	if e != nil { return ret, e }
+	ret.Min, e = strconv.ParseFloat(row[8], 64)
+	if e != nil { return ret, e }
+
+	ret.BuyPrice[0], e = strconv.ParseFloat(row[9], 64)
+	if e != nil { return ret, e }
+	ret.BuyPrice[1], e = strconv.ParseFloat(row[10], 64)
+	if e != nil { return ret, e }
+	ret.BuyPrice[2], e = strconv.ParseFloat(row[11], 64)
+	if e != nil { return ret, e }
+	ret.BuyPrice[3], e = strconv.ParseFloat(row[12], 64)
+	if e != nil { return ret, e }
+	ret.BuyPrice[4], e = strconv.ParseFloat(row[13], 64)
+	if e != nil { return ret, e }
+
+	ret.Buy[0], e = strconv.ParseFloat(row[14], 64)
+	if e != nil { return ret, e }
+	ret.Buy[1], e = strconv.ParseFloat(row[15], 64)
+	if e != nil { return ret, e }
+	ret.Buy[2], e = strconv.ParseFloat(row[16], 64)
+	if e != nil { return ret, e }
+	ret.Buy[3], e = strconv.ParseFloat(row[17], 64)
+	if e != nil { return ret, e }
+	ret.Buy[4], e = strconv.ParseFloat(row[18], 64)
+	if e != nil { return ret, e }
+
+	ret.SellPrice[0], e = strconv.ParseFloat(row[19], 64)
+	if e != nil { return ret, e }
+	ret.SellPrice[1], e = strconv.ParseFloat(row[20], 64)
+	if e != nil { return ret, e }
+	ret.SellPrice[2], e = strconv.ParseFloat(row[21], 64)
+	if e != nil { return ret, e }
+	ret.SellPrice[3], e = strconv.ParseFloat(row[22], 64)
+	if e != nil { return ret, e }
+	ret.SellPrice[4], e = strconv.ParseFloat(row[23], 64)
+	if e != nil { return ret, e }
+
+	ret.Sell[0], e = strconv.ParseFloat(row[24], 64)
+	if e != nil { return ret, e }
+	ret.Sell[1], e = strconv.ParseFloat(row[25], 64)
+	if e != nil { return ret, e }
+	ret.Sell[2], e = strconv.ParseFloat(row[26], 64)
+	if e != nil { return ret, e }
+	ret.Sell[3], e = strconv.ParseFloat(row[27], 64)
+	if e != nil { return ret, e }
+	ret.Sell[4], e = strconv.ParseFloat(row[28], 64)
+	if e != nil { return ret, e }
+
+	ret.Deal, e = strconv.ParseFloat(row[29], 64)
+	if e != nil { return ret, e }
+	ret.DealPrice, e = strconv.ParseFloat(row[30], 64)
+	if e != nil { return ret, e }
 	return
 }
