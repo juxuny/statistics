@@ -24,7 +24,7 @@ func importDir() {
 		return
 	}
 	if !stat.CheckDate(date) {
-		log.Println("invalid data: ", date)
+		log.Println("invalid date: ", date)
 		return
 	}
 	log.Println("start import")
