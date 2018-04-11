@@ -43,7 +43,7 @@ func main() {
 		log.Panicln(e)
 	}
 	log.Println(codeList)
-	stat.SetDebug(true)
+	stat.SetDebug(debug)
 	collector, e := stat.NewSohuCollector(dbConfig, true)
 	for _, stockCode := range codeList {
 		c := stat.ConvertSinaCodeToSohuCode(stockCode.Code)
