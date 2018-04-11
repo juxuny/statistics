@@ -42,3 +42,23 @@ func MergeStrings(str ... []string) (ret []string) {
 	}
 	return
 }
+
+func ConvertSinaCodeToSohuCode(code string) (s string) {
+	for _, i := range code {
+		if i >= '0' && i <= '9' {
+			s += string(i)
+		}
+	}
+	return "cn_" + s
+}
+
+
+//只返回数字
+func NumberFilter(s string) (r string) {
+	for _, i := range s {
+		if i >= '0' && i <= '9' {
+			r += string(i)
+		}
+	}
+	return r
+}

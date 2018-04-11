@@ -8,6 +8,8 @@ import (
 	"time"
 	"strings"
 	"github.com/opesun/goquery"
+	"strconv"
+	"database/sql"
 )
 
 const (
@@ -148,6 +150,11 @@ func (t *CollectorImpl) init(stockCode string) (e error) {
 	return
 }
 
+func (t *CollectorImpl) FetchStockPriceDuration(start, end string, stockCode ...string) (r map[string][]StockPrice, e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
 func (t *CollectorImpl) FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error) {
 	r = make(map[string]StockPrice)
 	for _, code := range stockCode {
@@ -199,11 +206,10 @@ func (t *CollectorImpl) SaveStockPrice(price ...StockPrice) (e error) {
 		sql := `INSERT IGNORE INTO %s (date, time, current_price, open_price, yesterday_close, max, min, buy_1, buy_2, buy_3, buy_4, buy_5, buy_price_1, buy_price_2, buy_price_3, buy_price_4, buy_price_5, sell_1, sell_2, sell_3, sell_4, sell_5, sell_price_1, sell_price_2, sell_price_3, sell_price_4, sell_price_5, deal, deal_price)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
-		//log.Print("save stock price")
-		_, e = db.Exec(fmt.Sprintf(sql, table), p.Date, p.Time, p.CurrentPrice, p.OpenPrice, p.YesterdayPrice, p.Max, p.Min, p.Buy[0], p.Buy[1], p.Buy[2], p.Buy[3], p.Buy[4], p.BuyPrice[0], p.BuyPrice[1], p.BuyPrice[2], p.BuyPrice[3], p.BuyPrice[4], p.Sell[0], p.Sell[1], p.Sell[2], p.Sell[3], p.Sell[4], p.SellPrice[0], p.SellPrice[1], p.SellPrice[2], p.SellPrice[3], p.SellPrice[4], p.Deal, p.DealPrice, )
-			if e != nil {
-				log.Print(e)
-			}
+		_, e = db.Exec(fmt.Sprintf(sql, table), p.Date, p.Time, p.CurrentPrice, p.OpenPrice, p.YesterdayPrice, p.Max, p.Min, p.Buy[0], p.Buy[1], p.Buy[2], p.Buy[3], p.Buy[4], p.BuyPrice[0], p.BuyPrice[1], p.BuyPrice[2], p.BuyPrice[3], p.BuyPrice[4], p.Sell[0], p.Sell[1], p.Sell[2], p.Sell[3], p.Sell[4], p.SellPrice[0], p.SellPrice[1], p.SellPrice[2], p.SellPrice[3], p.SellPrice[4], p.Deal, p.DealPrice)
+		if e != nil {
+			log.Print(e)
+		}
 	}
 	return
 }
@@ -371,5 +377,151 @@ func (t *FCollector) fetch(stockType, stockClass, sinaPrefix string) (r []StockC
 			r = append(r, stockCode)
 		}
 	}
+	return
+}
+
+
+//通过搜狐API抓取某一个时间段的历史数据（日数据）
+type SohuCollector struct {
+	CollectorImpl
+	//config DBConfig
+	//Prefix string
+	createTable bool
+}
+
+
+func NewSohuCollector(config DBConfig, createTable bool) (r Collector, e error) {
+	c := &SohuCollector{}
+	c.config = config
+	c.Prefix = "sohu_"
+	c.createTable = createTable
+	r = c
+	return
+}
+
+func (t *SohuCollector) FetchStockCode() (r []StockCode, e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
+func (t *SohuCollector) SaveStockCode(r []StockCode) (e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
+func (t *SohuCollector) FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
+func (t *SohuCollector) FetchStockPriceDuration(start, end string, stockCode ...string) (r map[string][]StockPrice, e error) {
+	r = make(map[string][]StockPrice)
+	var respObj []struct {
+		Status int `json:"status"`
+		Data [][]string `json:"hq"`
+		Code string `json:"code"`
+		Stat []interface{} `json:"stat"`
+		Msg string `json:"msg"`
+	}
+	for _, c := range stockCode {
+		code := ConvertSinaCodeToSohuCode(c)
+		var resp *http.Response
+		url := fmt.Sprintf("http://q.stock.sohu.com/hisHq?code=%s&start=%s&end=%s&stat=1&order=D&period=d&rt=json", code, start, end)
+		if _DEBUG {
+			log.Println(url)
+		}
+		resp, e = http.Get(url)
+		if e != nil {
+			return
+		}
+		var data []byte
+		data, e = ioutil.ReadAll(resp.Body)
+		if e != nil {
+			return
+		}
+		if _DEBUG {
+			log.Println(string(data))
+		}
+		e = json.Unmarshal(data, &respObj)
+		if e != nil {
+			return
+		}
+		var p []StockPrice
+		if len(respObj) <= 0 {
+			e = fmt.Errorf("no response data")
+			return
+		}
+		for _, item := range respObj[0].Data {
+			var tmp StockPrice
+			tmp.StockCode = code
+			tmp.Date = item[0]
+			tmp.OpenPrice, e = strconv.ParseFloat(item[1], 64)
+			tmp.CurrentPrice, e = strconv.ParseFloat(item[2], 64)
+			tmp.Max, e = strconv.ParseFloat(item[5], 64)
+			tmp.Min, e = strconv.ParseFloat(item[6], 64)
+			tmp.Deal, e = strconv.ParseFloat(item[7], 64)
+			tmp.DealPrice, e = strconv.ParseFloat(item[8], 64)
+			p = append(p, tmp)
+		}
+		r[code] = p
+	}
+	return
+}
+
+func (t *SohuCollector) FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
+func (t *SohuCollector) SaveStockPrice(price ...StockPrice) (e error) {
+	if t.createTable {
+		set := make(map[string]bool)
+		for _, p := range price {
+			set[p.StockCode] = true
+		}
+		for c := range set {
+			t.init(c)
+		}
+	}
+	e = t.CollectorImpl.SaveStockPrice(price...)
+	return
+}
+
+func (t *SohuCollector) init(stockCode string) (e error) {
+	c := NumberFilter(stockCode)
+	var db *sql.DB
+	db, e = NewConnection(t.config)
+	defer db.Close()
+	if _DEBUG {
+		log.Println("creating table: ", t.Prefix + "cn_" + c)
+	}
+	_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + "cn_" +  c))
+	if e != nil {
+		log.Panicln(e)
+		return
+	}
+	rs, e := db.Query(fmt.Sprintf("SHOW INDEX FROM %s WHERE Key_name = 'PRIMARY';", t.Prefix + "cn_" + c))
+	if e != nil {
+		return
+	}
+	defer rs.Close()
+	if rs.Next() {
+		return
+	}
+	_, e = db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + "cn_" + c))
+	if e != nil {
+		log.Panicln(e)
+		return
+	}
+	return
+}
+
+func (t *SohuCollector) FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error) {
+	e = fmt.Errorf("no implement method")
+	return
+}
+
+func (t *SohuCollector) SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error) {
+	e = fmt.Errorf("no implement method")
 	return
 }

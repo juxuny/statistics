@@ -6,15 +6,6 @@ import (
 	"strconv"
 )
 
-type StockCode struct {
-	Type string
-	//stock code
-	Code string
-	//stock name
-	Name string
-}
-
-
 //解释从新浪获取到的原始数据
 //  e.g var hq_str_sh601006="大秦铁路,8.800,8.790,9.030,9.060,8.700,9.030,9.040,109367311,971205411.000,73530,9.030,895919,9.020,555200,9.010,29700,9.000,137700,8.990,256000,9.040,772531,9.050,1108457,9.060,269100,9.070,248000,9.080,2017-11-17,15:00:00,00";
 //  0：”大秦铁路”，股票名字；
@@ -132,11 +123,13 @@ type Collector interface {
 	//一个接一个地获取
 	FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error)
 	FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error)
+	FetchStockPriceDuration(start, end string, stockCode ...string) (r map[string][]StockPrice, e error)
 	SaveStockPrice(price ...StockPrice) (e error)
 	init(stockCode string) (e error)
 	//获取大盘指标数据
 	FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error)
 	SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error)
+
 }
 
 
