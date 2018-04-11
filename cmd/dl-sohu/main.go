@@ -44,7 +44,7 @@ func main() {
 	}
 	log.Println(codeList)
 	stat.SetDebug(true)
-	collector, e := stat.NewSohuCollector(stat.DEFAULT_DB_CONIG, true)
+	collector, e := stat.NewSohuCollector(dbConfig, true)
 	for _, stockCode := range codeList {
 		c := stat.ConvertSinaCodeToSohuCode(stockCode.Code)
 		log.Println("fatch data: ", c)
