@@ -22,6 +22,8 @@ func TestCodeTransform(t *testing.T) {
 
 
 func TestDownloadSohuData(t *testing.T) {
+	var tmp = DEFAULT_DB_CONIG
+	tmp.DatabaseName = "stock_sohu"
 	SetDebug(true)
 	collector, e := NewSohuCollector(DEFAULT_DB_CONIG, true)
 	if e != nil {
