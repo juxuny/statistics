@@ -6,6 +6,7 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"regexp"
+	"os"
 )
 
 func GBK_UTF8(src string) (string, error) {
@@ -61,4 +62,14 @@ func NumberFilter(s string) (r string) {
 		}
 	}
 	return r
+}
+
+
+//判断路径是否存在
+func PathExist(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
