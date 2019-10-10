@@ -123,7 +123,7 @@ func (t *CollectorImpl) SaveStockCode(r []StockCode) (e error) {
 			log.Print(e)
 			continue
 		}
-		_, e = tx.Exec("INSERT INTO stock_code (code, name, type) SELECT ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT id FROM stock_code WHERE code = ?)", v.Code, v.Name, v.Type, v.Code)
+		_, e = tx.Exec(fmt.Sprint("INSERT INTO stock_code (code, name, type) SELECT ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT id FROM stock_code WHERE code = ?)"), v.Code, v.Name, v.Type, v.Code)
 		if e != nil {
 			log.Print(e)
 			tx.Rollback()
@@ -314,7 +314,7 @@ func (t *CollectorImpl) SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo
 
 //抓取凤凰网的股票代码
 type FCollector struct {
-	CollectorImpl
+	EmptyCollector
 }
 
 func NewFCollector(config DBConfig) (r Collector) {

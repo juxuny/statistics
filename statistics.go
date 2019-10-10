@@ -1,9 +1,9 @@
 package statistics
 
 import (
-	"strings"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 //解释从新浪获取到的原始数据
@@ -130,6 +130,49 @@ type Collector interface {
 	FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error)
 	SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error)
 
+}
+
+type EmptyCollector struct {
+	config DBConfig
+	Prefix string
+}
+func (t *EmptyCollector) FetchStockCode()(r []StockCode, e error) {
+	panic("no implement")
+}
+
+func (t *EmptyCollector) SaveStockCode(r []StockCode) (e error) {
+	panic("no implement")
+}
+
+//按股票代码创建表
+func (t *EmptyCollector) init(stockCode string) (e error) {
+	panic("no implement")
+}
+
+func (t *EmptyCollector) FetchStockPriceDuration(start, end string, stockCode ...string) (r map[string][]StockPrice, e error) {
+	panic("no implement")
+}
+
+func (t *EmptyCollector) FetchStockPrice(stockCode ...string) (r map[string]StockPrice, e error) {
+	panic("no implement")
+}
+
+
+func (t *EmptyCollector) SaveStockPrice(price ...StockPrice) (e error) {
+	panic("no implement")
+}
+
+func (t *EmptyCollector) FetchStockPrices(stockCode ...string) (r map[string]StockPrice, e error) {
+	panic("no implement")
+}
+
+//获取大盘指数
+func (t *EmptyCollector) FetchMarketIndexes(indexCode ...string) (r map[string]MarketIndexInfo, e error) {
+	panic("no implement")
+}
+
+func (t *EmptyCollector) SaveMarketIndexesData(marketIndexInfo ...MarketIndexInfo) (e error) {
+	panic("no implement")
 }
 
 

@@ -3,8 +3,8 @@
 package main
 
 import (
-	stat "github.com/juxuny/statistics"
 	"flag"
+	stat "github.com/juxuny/statistics"
 	l "log"
 )
 
@@ -47,7 +47,7 @@ func main() {
 	collector, e := stat.NewSohuCollector(dbConfig, true)
 	for _, stockCode := range codeList {
 		c := stat.ConvertSinaCodeToSohuCode(stockCode.Code)
-		log.Println("fatch data: ", c)
+		log.Println("fetch data: ", c)
 		m, e := collector.FetchStockPriceDuration(stat.NumberFilter(start), stat.NumberFilter(end), c)
 		if e != nil {
 			log.Println(e)
