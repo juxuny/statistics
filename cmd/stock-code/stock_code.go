@@ -7,7 +7,7 @@ import (
 	l "log"
 )
 
-var dbConfig stat.DBConfig
+var dbConfig = stat.NewDefaultDBConfig()
 var (
 	log *l.Logger
 	debug bool

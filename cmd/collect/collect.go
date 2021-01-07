@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var dbConfig stat.DBConfig
+var dbConfig = stat.NewDefaultDBConfig()
 
 var (
 	isDebug     bool
