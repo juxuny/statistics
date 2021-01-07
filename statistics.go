@@ -48,8 +48,8 @@ func ParseStockPrice(stockCode string, resp string) (r StockPrice, e error) {
 	}
 	resp = resp[: ii]
 	s := strings.Split(resp, ",")
-	if len(s) != 33 {
-		e = fmt.Errorf("invalid response data, filed length: %d", len(s))
+	if len(s) < 33 {
+		e = fmt.Errorf("invalid response data, filed length: %d, %s, data: %s", len(s), stockCode, resp)
 		return
 	}
 	r.StockCode = stockCode
