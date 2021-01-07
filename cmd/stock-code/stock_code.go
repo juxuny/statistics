@@ -39,7 +39,8 @@ func main() {
 		log.Panic(e)
 		return
 	}
-	e = collector.SaveStockCode(r)
+	defaultCollector := stat.NewCollector(dbConfig)
+	e = defaultCollector.SaveStockCode(r)
 	if e != nil {
 		log.Print(e)
 		return

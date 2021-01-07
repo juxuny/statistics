@@ -2,19 +2,21 @@
 package main
 
 import (
+	"fmt"
 	stat "github.com/juxuny/statistics"
 	"flag"
+	"runtime/debug"
 	"time"
 )
 
 var dbConfig stat.DBConfig
 
 var (
-	debug bool
+	isDebug     bool
 	logFileName string
-	log = stat.GetLogger()
-	verbose bool
-	start, end string
+	log         = stat.GetLogger()
+	verbose     bool
+	start, end  string
 )
 
 func init() {
@@ -25,13 +27,13 @@ func init() {
 	flag.StringVar(&dbConfig.Password, "p", "123456", "password")
 	flag.IntVar(&dbConfig.Port, "port", 3306, "port for database")
 
-	flag.BoolVar(&debug, "d", false, "debug mode")
+	flag.BoolVar(&isDebug, "d", false, "debug mode")
 	flag.StringVar(&logFileName, "log", "1.log", "log file path")
 	flag.BoolVar(&verbose, "v", false, "verbose")
 	flag.StringVar(&start, "start", "09:00", "time to start")
 	flag.StringVar(&end, "end", "16:00", "time to exit")
 	flag.Parse()
-	stat.SetDebug(debug)
+	stat.SetDebug(isDebug)
 	stat.SetLogFile(logFileName)
 	log = stat.GetLogger()
 }
@@ -41,8 +43,26 @@ func main() {
 		current := time.Now().Format("15:04")
 		log.Print("current: ", current)
 		if current >= start && current <= end {
-			go collectPrice()
-			go collectMarketIndexes()
+			go func() {
+				defer func() {
+					if err := recover(); err != nil {
+						fmt.Println(err)
+						debug.PrintStack()
+						return
+					}
+				}()
+				collectPrice()
+			}()
+			go func() {
+				defer func() {
+					if err := recover(); err != nil  {
+						fmt.Println(err)
+						debug.PrintStack()
+						return
+					}
+					collectMarketIndexes()
+				}()
+			}()
 		}
 		time.Sleep(time.Minute)
 	}
