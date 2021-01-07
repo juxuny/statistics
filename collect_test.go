@@ -25,13 +25,13 @@ func TestCollectStockData (t *testing.T) {
 	//}
 	//c.SaveStockCode(stockCodes)
 
-	r, e := c.FetchStockPrices("sh601006", "sh600439")
+	r, e := c.FetchStockPrices("sh600832", "sh600439")
 	if e != nil {
 		t.Log(e)
 		t.Fail()
 	}
 	t.Log(r)
-	e = c.SaveStockPrice(r["sh601006"])
+	e = c.SaveStockPrice(r["sh600832"])
 	if e != nil {
 		t.Log(e)
 		t.Fail()

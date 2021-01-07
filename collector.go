@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS %s
   deal            DOUBLE      NULL
   COMMENT '成交的股票数，由于股票交易以一百股为基本单位，所以在使用时，通常把该值除以一百；',
   deal_price      DOUBLE      NULL
-  COMMENT '成交金额，单位为“元”，为了一目了然，通常以“万元”为成交金额的单位，所以通常把该值除以一万；'
+  COMMENT '成交金额，单位为“元”，为了一目了然，通常以“万元”为成交金额的单位，所以通常把该值除以一万；',
+  PRIMARY KEY(date, time)
 )
   COMMENT '数据表模板';
 `
@@ -322,6 +323,44 @@ func NewFCollector(config DBConfig) (r Collector) {
 	c.config = config
 	c.Prefix = "sina_"
 	r = c
+	return
+}
+
+func (t *FCollector) SaveStockCode(r []StockCode) (e error) {
+	db, e := NewConnection(t.config)
+	if e != nil {
+		log.Print(e)
+		return
+	}
+	defer db.Close()
+	for _, v := range r {
+		tx, e := db.Begin()
+		if e != nil {
+			log.Print(e)
+			continue
+		}
+		rs, e := tx.Exec(fmt.Sprint("INSERT INTO stock_code (code, name, type) SELECT ?, ?, ? FROM DUAL WHERE NOT EXISTS (SELECT id FROM stock_code WHERE code = ?)"), v.Code, v.Name, v.Type, v.Code)
+		if e != nil {
+			log.Print(e)
+			tx.Rollback()
+			continue
+		}
+		if affected, _ := rs.RowsAffected(); affected > 0 {
+			_, e = db.Exec(fmt.Sprintf(CREATE_STOCK_TABLE_TEMPLATE, t.Prefix + v.Code))
+			if e != nil {
+				log.Print(e)
+				tx.Rollback()
+				continue
+			}
+			//_, e = db.Exec(fmt.Sprintf(CREATE_PRIMARY_KEY, t.Prefix + v.Code))
+			//if e != nil {
+			//	log.Print(e)
+			//	tx.Rollback()
+			//	continue
+			//}
+		}
+		e = tx.Commit()
+	}
 	return
 }
 

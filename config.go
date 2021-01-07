@@ -22,7 +22,7 @@ func NewDefaultDBConfig() (r DBConfig) {
 	r.User = "root"
 	r.Password = "123456"
 	r.Host = "127.0.0.1"
-	r.Port = 3306
+	r.Port = 3307
 	r.DatabaseName = "stock"
 	r.InitTable = true
 	return
