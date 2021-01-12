@@ -1,0 +1,6 @@
+#!/bin/sh
+if [ "${CLI}" = 'stock-code' ]; then
+  /app/stock-code -host "${DB_HOST}" -u "${DB_USER}" -p "${DB_PASS}" -port "${DB_PORT}" -name "${DB_NAME}" -d=${DEBUG} -log=''
+else
+  /app/collect -host "${DB_HOST}" -u "${DB_USER}" -p "${DB_PASS}" -port "${DB_PORT}" -name "${DB_NAME}" -d="${DEBUG}" -log='' -start "${START_TIME}" -end "${END_TIME}"
+fi

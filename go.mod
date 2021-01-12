@@ -1,4 +1,4 @@
-module github.com/juxuny/bridge
+module github.com/juxuny/statistics
 
 require (
 	cloud.google.com/go v0.34.0 // indirect
@@ -7,7 +7,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
 	github.com/elazarl/goproxy v0.0.0-20181111060418-2ce16c963a8a // indirect
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
-	github.com/go-sql-driver/mysql v1.4.1 // indirect
+	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gofrs/uuid v3.1.0+incompatible // indirect
 	github.com/gomarkdown/markdown v0.0.0-20190222000725-ee6a7931a1e4 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
@@ -16,6 +16,7 @@ require (
 	github.com/importcjj/sensitive v0.0.0-20190611120559-289e87ec4108 // indirect
 	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
 	github.com/lib/pq v1.0.0 // indirect
+	github.com/opesun/goquery v0.0.0-20160908163916-0d77e43213cd
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/silenceper/wechat v1.0.0 // indirect
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
@@ -23,11 +24,11 @@ require (
 	github.com/tidwall/match v1.0.1 // indirect
 	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
+	golang.org/x/text v0.3.0
 	google.golang.org/appengine v1.4.0 // indirect
 	gopkg.in/appleboy/gofight.v2 v2.0.0-00010101000000-000000000000 // indirect
 	qiniupkg.com/x v7.0.8+incompatible // indirect
 )
-
 
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.34.0
